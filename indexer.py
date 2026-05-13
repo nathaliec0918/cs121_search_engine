@@ -28,9 +28,9 @@ STEMMER = PorterStemmer()
 
 
 class Posting:
-    def __init__(self, docID, freq_count, fields = None, positions = None):
+    def __init__(self, docID, frequencies, fields = None, positions = None):
         self.docID = docID
-        self.freq_count = freq_count
+        self.frequencies = frequencies
         #self.fields = fields for future assignments
         #self.positions = positions
 
@@ -44,12 +44,12 @@ def build_index(frontier: list):
         batch = get_batch(frontier, 100)
         for document in batch:
             docID += 1
-            stemmed_tokens = parse_to_token(document)
-            unique_token = set(stemmed_tokens) # remove duplicates
-            for t in unique_token:
+            unique_stemmed_tokens, frequencies = parse_to_token(document) #stemmed_tokens is already duplicate removed
+            for t in unique_stemmed_tokens:
                 if t not in index:
                     index[t] = []
-                index[t].append(Posting(docID))
+                index[t].append(Posting(docID, frequencies[t]))
+        
         sort_and_write_to_disk(index, name) # uploading too Disk, reset RAM
         index = dict()
         
@@ -65,16 +65,41 @@ def get_batch(frontier: list, batch_size: int)->list :
 def sort_and_write_to_disk(index, name):
     ...
 
-def parse_to_token(document: json) -> list[str]:
+def parse_to_token(file: json) -> list[str]:
+    # json structure: {"url":"", "content":""}
     try: 
-        with open(document, "r", encoding="utf-8") as f:
-            document = json.load(f)
+        with open(file, "r", encoding="utf-8") as f:
+            document = json.load(f) # hht
+        try: 
+            soup = BeautifulSoup(document["content"], "lxml")
+        except:
+            soup = BeautifulSoup(document["content"], "html.parser")
+
+        for tag in soup(["script", "style", "noscript"]):
+            tag.decompose()
+
+        text_content = soup.get_text(separator=" ")
+        tokens = re.findall(r"[a-zA-Z]", text_content.lower())
+
+        # porter stemmer
+        stemmed = [STEMMER.stem(token) for token in tokens]
+
+        # frequencies
+        word_frequencies = dict()
+    
+        for word in stemmed:
+            if word in word_frequencies:
+                word_frequencies[word] += 1
+            else: 
+                word_frequencies[word] = 1
+
+        return set(stemmed), word_frequencies
+    
+        
     except (json.JSONDecodeError, OSError):
-        ...
-    # try: 
-    #     soup = BeautifulSoup(content, "lxml")
-    # except:
-    #     soup = BeautifulSoup(content, "html.parser")
+        return []
+    
+
 
 
 # def report(document:json) -> list:
