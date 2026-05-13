@@ -1,6 +1,6 @@
 import json
 import sys
-import os.path
+import os
 from pathlib import Path
 import re
 from bs4 import BeautifulSoup
@@ -25,6 +25,7 @@ Report structure (json) {
 '''
 
 STEMMER = PorterStemmer()
+PARTIAL_DIR = "partial_indexes"
 
 
 class Posting:
@@ -39,31 +40,84 @@ def build_index(frontier: list):
     # basic flow
     index = dict()
     docID = 0
+    batch_name = 0
     batch = []
     while frontier:
+        batch_name += 1
         batch = get_batch(frontier, 100)
         for document in batch:
-            docID += 1
-            unique_stemmed_tokens, frequencies = parse_to_token(document) #stemmed_tokens is already duplicate removed
-            for t in unique_stemmed_tokens:
-                if t not in index:
-                    index[t] = []
-                index[t].append(Posting(docID, frequencies[t]))
+            if document.endswith(".json"):
+                docID += 1
+                unique_stemmed_tokens = set()
+                unique_stemmed_tokens, frequencies = parse_to_token(document) #stemmed_tokens is already duplicate removed
+                for t in unique_stemmed_tokens:
+                    if t not in index:
+                        index[t] = []
+                    index[t].append(Posting(docID, frequencies[t]))
+
+            else:
+                print(document) #REMOVE LATER
         
-        sort_and_write_to_disk(index, name) # uploading too Disk, reset RAM
+        # update on batch level
+        write_new_report(num_docs_seen = docID, potential_new_tokens = index.keys())
+        
+        # store then reset batch
+        sort_and_write_to_disk(index, batch_name) # uploading too Disk, reset RAM
         index = dict()
         
     return index
 
+
+def write_new_report(num_docs_seen = None, potential_new_tokens = None, index_size = None):
+    with open("a3_1_report.json", "r", encoding="utf-8") as file:
+        try:
+            report = json.load(file)
+        except json.decoder.JSONDecodeError:
+            report = {"num_indexed_docs": 0,
+                    "num_unique_tokens": 0,
+                    "total_size_kb": 0,
+                    "unique_tokens": list(), #set
+                }
+            
+    if num_docs_seen:
+        report["num_indexed_docs"] = num_docs_seen
+    if potential_new_tokens:
+        report["unique_tokens"] = list(set(report["unique_tokens"] + list(potential_new_tokens)))
+        report["num_unique_tokens"] = len(report["unique_tokens"])
+    if index_size:
+        report["total_size_kb"] += index_size
+
+    with open("a3_1_report.json", "w", encoding="utf-8") as f:
+        json.dump(report, f)
+
+
 def get_batch(frontier: list, batch_size: int)->list :
     #returns batch of first n urls and removes them from the frontier
+    if batch_size >= len(frontier):
+        batch_size = len(frontier) - 1
     batch = frontier[:batch_size]
-    frontier = frontier[batch_size:]
+    del frontier[:batch_size]
+
     return batch
 
 
-def sort_and_write_to_disk(index, name):
-    ...
+def sort_and_write_to_disk(index: dict, name: int):
+    os.makedirs(PARTIAL_DIR, exist_ok=True)
+    path = os.path.join(PARTIAL_DIR, f"partial_{name}.json")
+
+    postings_as_dict = {}
+    for token in index:
+        posting_list = []
+        for p in index[token]:
+            posting_list.append({"doc_ID": p.docID, "freq": p.frequencies})
+        postings_as_dict[token] = posting_list
+
+    with open(path, "w", encoding="utf-8") as f:
+        json.dump(postings_as_dict, f)
+        
+    file_size_kilobytes = os.path.getsize(path) / 1024
+    write_new_report(index_size = file_size_kilobytes)
+    
 
 def parse_to_token(file: json) -> list[str]:
     # json structure: {"url":"", "content":""}
@@ -71,7 +125,7 @@ def parse_to_token(file: json) -> list[str]:
         with open(file, "r", encoding="utf-8") as f:
             document = json.load(f) # hht
         try: 
-            soup = BeautifulSoup(document["content"], "lxml")
+            soup = BeautifulSoup(document["content"], "xml")
         except:
             soup = BeautifulSoup(document["content"], "html.parser")
 
@@ -79,7 +133,7 @@ def parse_to_token(file: json) -> list[str]:
             tag.decompose()
 
         text_content = soup.get_text(separator=" ")
-        tokens = re.findall(r"[a-zA-Z]", text_content.lower())
+        tokens = re.findall(r"[a-zA-Z0-9]+", text_content.lower())
 
         # porter stemmer
         stemmed = [STEMMER.stem(token) for token in tokens]
@@ -97,46 +151,34 @@ def parse_to_token(file: json) -> list[str]:
     
         
     except (json.JSONDecodeError, OSError):
-        return []
-    
+        return set(), {}
 
-
-
-# def report(document:json) -> list:
-#     with open(document, "r", encoding="utf-8") as file:
-#         try:
-#             parsed = json.load(file)
-#         except json.decoder.JSONDecodeError:
-#             parsed = {
-#                 "num_indexed_doc": 0,
-#                 "num_unique_tokens": 0,
-#                 "index_size": 0,
-#                 "indexed_doc": {"docID": 0, "token": ""},
-#                 "unique_tokens": dict()
-#             }
-#     return parsed
 
 def get_corpus(top, corpus: list):
     for dirpath, dirnames, filenames in os.walk(top):
         for name in filenames:
             corpus.append(os.path.join(dirpath, name))
 
-def tokenize(parsed_doc):
-    # beautiful soup
-    # json: {"url":"", "content":""}
+
+def clear_previous_index():
+    if os.path.exists(PARTIAL_DIR):
+        for file in os.listdir(PARTIAL_DIR):
+            os.remove(os.path.join(PARTIAL_DIR, file))
+
+    with open("a3_1_report.json", "w", encoding="utf-8"):
+        pass
     
-    pass   
 
 def main():
     if len(sys.argv) == 2:
         filePath = sys.argv[1]
+        clear_previous_index()
         try:
             corpus = []
             get_corpus(filePath, corpus)
-            build_index(corpus)
-        
         except:
             print("Unable to open path or path is invalid. Please restart the program to try again.") # CHANGE LATER
+        build_index(corpus)
     else:
         print("Please restart the program and specify one file path") 
 
