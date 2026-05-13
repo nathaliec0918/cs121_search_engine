@@ -56,7 +56,8 @@ def build_index(frontier: list):
                     index[t].append(Posting(docID, frequencies[t]))
 
             else:
-                print(document) #REMOVE LATER
+                continue
+                #print(document) #REMOVE LATER
         
         # update on batch level
         write_new_report(num_docs_seen = docID, potential_new_tokens = index.keys())
@@ -176,7 +177,7 @@ def main():
         try:
             corpus = []
             get_corpus(filePath, corpus)
-            print(len(corpus))
+            #print(len(corpus))
         except:
             print("Unable to open path or path is invalid. Please restart the program to try again.") # CHANGE LATER
         build_index(corpus)
