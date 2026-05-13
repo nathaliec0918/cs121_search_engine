@@ -94,8 +94,8 @@ def write_new_report(num_docs_seen = None, potential_new_tokens = None, index_si
 def get_batch(frontier: list, batch_size: int)->list :
     #returns batch of first n urls and removes them from the frontier
     if batch_size >= len(frontier):
-        batch_size = len(frontier) - 1
-    batch = frontier[:batch_size]
+        batch_size = len(frontier)
+    batch = frontier[:batch_size] 
     del frontier[:batch_size]
 
     return batch
@@ -176,6 +176,7 @@ def main():
         try:
             corpus = []
             get_corpus(filePath, corpus)
+            print(len(corpus))
         except:
             print("Unable to open path or path is invalid. Please restart the program to try again.") # CHANGE LATER
         build_index(corpus)
@@ -185,3 +186,10 @@ def main():
 
 if __name__ == "__main__":
     main()
+    #  if len(sys.argv) == 2:
+    #     filePath = sys.argv[1]
+    #     clear_previous_index()
+    #     corpus = []
+    #     get_corpus(filePath, corpus)
+    #     print(len(corpus))
+    
