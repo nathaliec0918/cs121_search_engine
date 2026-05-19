@@ -191,6 +191,20 @@ def process_query_to_token(query: str):
 
     return set(stemmed)
 
+def search(query: str):
+    tokens = process_query_to_token(query)
+    with open("final_index.json", "r", encoding="utf-8") as f:
+        index = json.load(f)
+
+    p_lists = []
+    for token in tokens:
+        posting_list = index.get(token)
+        if posting_list == None:
+            continue
+        p_lists.append(posting_list)
+        
+    
+
 def main():
     if len(sys.argv) == 2:
         filePath = sys.argv[1]
