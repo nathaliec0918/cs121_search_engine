@@ -65,6 +65,8 @@ def build_index(frontier: list):
         # store then reset batch
         sort_and_write_to_disk(index, batch_name) # uploading too Disk, reset RAM
         index = dict()
+    
+    merge_partials()
         
     return index
 
@@ -178,11 +180,16 @@ def merge_partials():
         for token, postings, in partial.items():
             if token not in merged:
                 merged[token] = []
-                merged[token].extend(postings)
+            merged[token].extend(postings)
 
     with open("final_index.json", "w", encoding="utf-8") as f:
         json.dump(merged, f)
     
+def process_query_to_token(query: str):
+    tokens = re.findall(r"[a-zA-Z0-9]+", query.lower())
+    stemmed = [STEMMER.stem(token) for token in tokens]
+
+    return set(stemmed)
 
 def main():
     if len(sys.argv) == 2:
@@ -195,6 +202,9 @@ def main():
         except:
             print("Unable to open path or path is invalid. Please restart the program to try again.") # CHANGE LATER
         build_index(corpus)
+        user_query = ""
+        while user_query != "-QUIT-":
+            user_query = input("Please enter your query (type '-QUIT-' to quit): ")
     else:
         print("Please restart the program and specify one file path") 
 
