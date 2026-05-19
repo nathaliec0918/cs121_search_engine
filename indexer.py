@@ -168,6 +168,20 @@ def clear_previous_index():
 
     with open("a3_1_report.json", "w", encoding="utf-8"):
         pass
+
+def merge_partials():
+    merged = {}
+    for file in os.listdir(PARTIAL_DIR):
+        path = os.path.join(PARTIAL_DIR, file)
+        with open(path, "r", encoding="utf-8") as f:
+            partial = json.load(f)
+        for token, postings, in partial.items():
+            if token not in merged:
+                merged[token] = []
+                merged[token].extend(postings)
+
+    with open("final_index.json", "w", encoding="utf-8") as f:
+        json.dump(merged, f)
     
 
 def main():
