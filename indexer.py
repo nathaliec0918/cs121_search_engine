@@ -299,7 +299,7 @@ def query(total_n_docs: int) -> None:
     boolean_search = get_intersection(full_search, total_n_docs)
     top5_docID = rank_frequencies(boolean_search)
     
-    print(top5_docID)
+    print(top5_docID) # REMOVE LATER
     
     top5_URL = get_URLs_from_doc(top5_docID) 
     print_URLs_and_scores(top5_URL) 
@@ -310,14 +310,14 @@ def main():
     if len(sys.argv) == 2:
         filePath = sys.argv[1]
         clear_previous_index()
-        # try:
-        corpus = []
-        get_corpus(filePath, corpus)
-        #print(len(corpus))
-        total_n_docs = build_index(corpus) # also get docID associated URLs (loaded in json)
-        query(total_n_docs)
-        # except:
-        #     print("Unable to open path or path is invalid. Please restart the program to try again.") # CHANGE LATER
+        try:
+            corpus = []
+            get_corpus(filePath, corpus)
+            #print(len(corpus))
+            total_n_docs = build_index(corpus) # also get docID associated URLs (loaded in json)
+            query(total_n_docs)
+        except:
+            print("Unable to open path or path is invalid. Please restart the program to try again.") # CHANGE LATER
         
         
     else:
