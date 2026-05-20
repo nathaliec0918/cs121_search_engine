@@ -5,6 +5,7 @@ from pathlib import Path
 import re
 from bs4 import BeautifulSoup
 from nltk.stem import PorterStemmer
+from math import log
 
 
 '''
@@ -36,7 +37,7 @@ class Posting:
         #self.positions = positions
 
 # partial index flow 
-def build_index(frontier: list) -> None:
+def build_index(frontier: list) -> int:
     # basic flow
     index = dict()
     docIDIndex = dict()
@@ -72,6 +73,8 @@ def build_index(frontier: list) -> None:
         # store then reset batch
         sort_and_write_to_disk(index, batch_name) # uploading too Disk, reset RAM
         index = dict()
+
+        return docID
     
     merge_partials()
         
@@ -200,63 +203,22 @@ def process_query_to_token(query: str):
 
     return set(stemmed)
 
-def search(query: str) -> dict:
-    tokens = process_query_to_token(query)
+def search(query_tokens: set) -> dict:
     with open("final_index.json", "r", encoding="utf-8") as f:
         index = json.load(f)
 
-    p_lists = {}
-    for token in tokens:
+    token_postings_dict = {}
+    for token in query_tokens:
         posting_list = index.get(token)
         if posting_list == None:
             continue
-        p_lists[token] = posting_list
+        token_postings_dict[token] = posting_list
 
-    if not p_lists:
-        return {}
-      
-    #intersection_p_lists = dict()
-      
-    # sort p_list by length
-    # sorted_p_lists = sorted(p_lists.items(), key=len) 
-    sorted_p_lists = dict(sorted(p_lists.items(), key=lambda x: len(x[1])))
+    return token_postings_dict
     
-    
-    # get only shortest p list to compare
-    first_token = next(iter(sorted_p_lists))
-    for p in sorted_p_lists[first_token]:
-        intersection_p_lists[p["doc_ID"]] = p["freq"]
-    
-    # boolean and
-    for token, p_list in list(sorted_p_lists.items())[1:]:
-        
-        current = dict()
-        for p in p_list:
-            current[p["doc_ID"]] = p["freq"]
-        
-        update_intersection = dict()
-        for docID in intersection_p_lists:
-            if docID in current:
-                update_intersection[docID] = current[docID] + intersection_p_lists[docID]
-        intersection_p_lists = update_intersection
-    
-    return intersection_p_lists
 
-    # thy:[{docid: 1, freq: 7}
-    # tran:[{docid: 1, freq: 3}, {docid: 2, freq: 6}] 
-
-    #intersection: [{docid: 1, freq: 10}
-
-    #tf-idf
-    #tf: have ("freq")
-    # idf = log(total_docs/docs_containing_term)
-    ##df: in corpus, how many we have <- len(index[token])
-
-
-    # docID value = total number of documents
-    # len(p_list) = number of documents containing each term
-
-    # code:
+def calc_tfidf(tf: int, df: int, n: int) -> float:
+     # code:
     # total_docs = len(idIndex)
     # idf = {}
     # for token, postings in p_lists.items():
@@ -264,22 +226,65 @@ def search(query: str) -> dict:
     
     # boolean AND
     # store freq * idf[token] ...
+    weighed_tf = 1 + log(tf, 10)
+    weighed_idf = log((n/df), 10)
 
+    return weighed_tf * weighed_idf
 
-def rank_frequencies(intersection_p_lists: dict): # imp tf-idf here?
+def get_intersection(search_postings_dict: dict, total_n) -> dict:
+    sorted_search_postings_dict = dict(sorted(search_postings_dict.items(), key=lambda x: len(x[1])))
+    # get only shortest p list to compare
+    first_token = next(iter(sorted_search_postings_dict))
+    for p in sorted_search_postings_dict[first_token]:
+        intersection_docs[p["doc_ID"]] = calc_tfidf(p["freq"], len(p), total_n)
     
-    result = sorted(intersection_p_lists.items(), key=lambda x: -x[1])
-    return result[:5]
+    # boolean and
+    for token, p_list in list(sorted_search_postings_dict.items())[1:]:
+        
+        current = dict()
+        for p in p_list:
+            current[p["doc_ID"]] = calc_tfidf(p["freq"], len(p), total_n)
+        
+        update_intersection = dict()
+        for docID in intersection_docs:
+            if docID in current:
+                update_intersection[docID] = current[docID] + intersection_docs[docID]
+        intersection_docs = update_intersection
+    
+    return intersection_docs
+   
+def rank_frequencies(intersection_docs: dict): # imp tf-idf here?
+    result = sorted(intersection_docs.items(), key=lambda x: -x[1])
 
-def get_URLs_from_doc(top5docs: dict) -> list[int]: # int,int,int,int,int
-    asURL = []
+    to_show = 5 if len(result) >= 5 else len(result)
+    return result[:to_show]
+
+def get_URLs_from_doc(top5docs: dict) -> dict: 
+    asURL = {}
     with open("doc_id_to_url.json", "r", encoding="utf-8") as file:
         idIndex = json.load(file)
     
-    for doc in top5docs.keys():
-        asURL.append(idIndex[str(doc)]) # .json's always store keys as strings
+    for doc, score in enumerate(top5docs):
+        asURL[int(idIndex[str(doc)])] = score # .json's always store keys as strings
 
     return asURL
+
+def print_URLs_and_scores(url_dict: dict) -> None:
+    if not url_dict:
+        print("No results found.\n")
+        return
+
+    n = 1
+    print(f"Top {len(url_dict)} Results:")
+    for url, score in enumerate(url_dict):
+        print(f"{url}  |||  Relevance Score: {score}")
+
+    if len(url_dict) < 5:
+        print(f"Only found {len(url_dict)} results.")
+    print()
+    return
+
+    
 
 def main():
     if len(sys.argv) == 2:
@@ -291,13 +296,17 @@ def main():
             #print(len(corpus))
         except:
             print("Unable to open path or path is invalid. Please restart the program to try again.") # CHANGE LATER
-        build_index(corpus) # also get docID associated URLs (loaded in json)
+        total_n_docs = build_index(corpus) # also get docID associated URLs (loaded in json)
         user_query = ""
         while user_query != "-QUIT-":
             user_query = input("Please enter your query (type '-QUIT-' to quit): ")
-            # full_search = search(user_query)
-            # top5_docID = rank_frequencies(full_search)
-            # top5_URL = get_URL_from_doc(top5_docID)
+            query_as_tokens = process_query_to_token(user_query)
+            full_search = search(query_as_tokens, total_n_docs)
+            if full_search:
+                boolean_search = get_intersection(full_search, total_n_docs)
+                top5_docID = rank_frequencies(boolean_search)
+            top5_URL = get_URLs_from_doc(top5_docID)
+            print(top5_URL)
             # print(top5_URL)
     else:
         print("Please restart the program and specify one file path") 
