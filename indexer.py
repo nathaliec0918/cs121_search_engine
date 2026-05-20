@@ -202,8 +202,34 @@ def search(query: str):
         if posting_list == None:
             continue
         p_lists.append(posting_list)
+      
+    #intersection_p_lists = dict()
+      
+    # sort p_list by length
+    if p_lists:
+        sorted_p_lists = sorted(p_lists, key=len) 
+    else:
+        sorted_p_lists = []
         
     
+    # get only shortest p list to compare
+    intersection_p_lists = dict()
+    for p in sorted_p_lists[0]:
+        intersection_p_lists[p["doc_ID"]] = p["freq"]
+    
+    # boolean and
+    for p_list in sorted_p_lists[1:]:
+        
+        current = dict()
+        for p in p_list:
+            current[p["doc_ID"]] = p["freq"]
+        
+        update_intersection = dict()
+        for docID in intersection_p_lists:
+            if docID in current:
+                update_intersection[docID] = current[docID] + intersection_p_lists[docID]
+        intersection_p_lists = update_intersection
+
 
 def main():
     if len(sys.argv) == 2:
