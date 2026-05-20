@@ -36,20 +36,24 @@ class Posting:
         #self.positions = positions
 
 # partial index flow 
-def build_index(frontier: list):
+def build_index(frontier: list) -> None:
     # basic flow
     index = dict()
+    docIDIndex = dict()
     docID = 0
     batch_name = 0
     batch = []
+
     while frontier:
         batch_name += 1
         batch = get_batch(frontier, 100)
         for document in batch:
             if document.endswith(".json"):
                 docID += 1
+                
                 unique_stemmed_tokens = set()
-                unique_stemmed_tokens, frequencies = parse_to_token(document) #stemmed_tokens is already duplicate removed
+                unique_stemmed_tokens, frequencies, url = parse_to_token(document) #stemmed_tokens is already duplicate removed
+                docIDIndex[docID] = url
                 for t in unique_stemmed_tokens:
                     if t not in index:
                         index[t] = []
@@ -60,6 +64,9 @@ def build_index(frontier: list):
                 #print(document) #REMOVE LATER
         
         # update on batch level
+        with open("doc_id_to_url.json", "w", encoding="utf-8") as file:
+            json.dump(docIDIndex, file)
+
         write_new_report(num_docs_seen = docID, potential_new_tokens = index.keys())
         
         # store then reset batch
@@ -68,7 +75,7 @@ def build_index(frontier: list):
     
     merge_partials()
         
-    return index
+    return
 
 
 def write_new_report(num_docs_seen = None, potential_new_tokens = None, index_size = None):
@@ -150,11 +157,13 @@ def parse_to_token(file: json) -> list[str]:
             else: 
                 word_frequencies[word] = 1
 
-        return set(stemmed), word_frequencies
+        doc_url = document["url"]
+
+        return set(stemmed), word_frequencies, doc_url
     
         
     except (json.JSONDecodeError, OSError):
-        return set(), {}
+        return set(), {}, ""
 
 
 def get_corpus(top, corpus: list):
@@ -196,29 +205,30 @@ def search(query: str) -> dict:
     with open("final_index.json", "r", encoding="utf-8") as f:
         index = json.load(f)
 
-    p_lists = []
+    p_lists = {}
     for token in tokens:
         posting_list = index.get(token)
         if posting_list == None:
             continue
-        p_lists.append(posting_list)
+        p_lists[token] = posting_list
+
+    if not p_lists:
+        return {}
       
     #intersection_p_lists = dict()
       
     # sort p_list by length
-    if p_lists:
-        sorted_p_lists = sorted(p_lists, key=len) 
-    else:
-        sorted_p_lists = []
-        
+    # sorted_p_lists = sorted(p_lists.items(), key=len) 
+    sorted_p_lists = dict(sorted(p_lists.items(), key=lambda x: len(x[1])))
+    
     
     # get only shortest p list to compare
-    intersection_p_lists = dict()
-    for p in sorted_p_lists[0]:
+    first_token = next(iter(sorted_p_lists))
+    for p in sorted_p_lists[first_token]:
         intersection_p_lists[p["doc_ID"]] = p["freq"]
     
     # boolean and
-    for p_list in sorted_p_lists[1:]:
+    for token, p_list in list(sorted_p_lists.items())[1:]:
         
         current = dict()
         for p in p_list:
@@ -232,9 +242,44 @@ def search(query: str) -> dict:
     
     return intersection_p_lists
 
-def sort_frequencies(intersection_p_lists: dict):
+    # thy:[{docid: 1, freq: 7}
+    # tran:[{docid: 1, freq: 3}, {docid: 2, freq: 6}] 
+
+    #intersection: [{docid: 1, freq: 10}
+
+    #tf-idf
+    #tf: have ("freq")
+    # idf = log(total_docs/docs_containing_term)
+    ##df: in corpus, how many we have <- len(index[token])
+
+
+    # docID value = total number of documents
+    # len(p_list) = number of documents containing each term
+
+    # code:
+    # total_docs = len(idIndex)
+    # idf = {}
+    # for token, postings in p_lists.items():
+        # idf[token] = log(docID / len(p_lists))
+    
+    # boolean AND
+    # store freq * idf[token] ...
+
+
+def rank_frequencies(intersection_p_lists: dict): # imp tf-idf here?
+    
     result = sorted(intersection_p_lists.items(), key=lambda x: -x[1])
     return result[:5]
+
+def get_URLs_from_doc(top5docs: dict) -> list[int]: # int,int,int,int,int
+    asURL = []
+    with open("doc_id_to_url.json", "r", encoding="utf-8") as file:
+        idIndex = json.load(file)
+    
+    for doc in top5docs.keys():
+        asURL.append(idIndex[str(doc)]) # .json's always store keys as strings
+
+    return asURL
 
 def main():
     if len(sys.argv) == 2:
@@ -246,12 +291,14 @@ def main():
             #print(len(corpus))
         except:
             print("Unable to open path or path is invalid. Please restart the program to try again.") # CHANGE LATER
-        build_index(corpus)
+        build_index(corpus) # also get docID associated URLs (loaded in json)
         user_query = ""
         while user_query != "-QUIT-":
             user_query = input("Please enter your query (type '-QUIT-' to quit): ")
             # full_search = search(user_query)
-            # top5_search = sort_frequencies(full_search)
+            # top5_docID = rank_frequencies(full_search)
+            # top5_URL = get_URL_from_doc(top5_docID)
+            # print(top5_URL)
     else:
         print("Please restart the program and specify one file path") 
 
