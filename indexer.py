@@ -191,7 +191,7 @@ def process_query_to_token(query: str):
 
     return set(stemmed)
 
-def search(query: str):
+def search(query: str) -> dict:
     tokens = process_query_to_token(query)
     with open("final_index.json", "r", encoding="utf-8") as f:
         index = json.load(f)
@@ -232,6 +232,9 @@ def search(query: str):
     
     return intersection_p_lists
 
+def sort_frequencies(intersection_p_lists: dict):
+    result = sorted(intersection_p_lists.items(), key=lambda x: -x[1])
+    return result[:5]
 
 def main():
     if len(sys.argv) == 2:
@@ -247,6 +250,8 @@ def main():
         user_query = ""
         while user_query != "-QUIT-":
             user_query = input("Please enter your query (type '-QUIT-' to quit): ")
+            # full_search = search(user_query)
+            # top5_search = sort_frequencies(full_search)
     else:
         print("Please restart the program and specify one file path") 
 
