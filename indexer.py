@@ -74,11 +74,11 @@ def build_index(frontier: list) -> int:
         sort_and_write_to_disk(index, batch_name) # uploading too Disk, reset RAM
         index = dict()
 
-        return docID
+        #return docID  #SHOULD MOVED OUTSIDE LOOP - NATH
     
     merge_partials()
         
-    return
+    return docID
 
 
 def write_new_report(num_docs_seen = None, potential_new_tokens = None, index_size = None):
@@ -235,15 +235,16 @@ def get_intersection(search_postings_dict: dict, total_n) -> dict:
     sorted_search_postings_dict = dict(sorted(search_postings_dict.items(), key=lambda x: len(x[1])))
     # get only shortest p list to compare
     first_token = next(iter(sorted_search_postings_dict))
+    intersection_docs = {} # INITIALIZED - NATH
     for p in sorted_search_postings_dict[first_token]:
-        intersection_docs[p["doc_ID"]] = calc_tfidf(p["freq"], len(p), total_n)
+        intersection_docs[p["doc_ID"]] = calc_tfidf(p["freq"], len(sorted_search_postings_dict[first_token]), total_n) # len(sorted_search_postings_dict[first_token]) instead of len(p) - NATH
     
     # boolean and
     for token, p_list in list(sorted_search_postings_dict.items())[1:]:
         
         current = dict()
         for p in p_list:
-            current[p["doc_ID"]] = calc_tfidf(p["freq"], len(p), total_n)
+            current[p["doc_ID"]] = calc_tfidf(p["freq"], len(p_list), total_n) # len(p_list) instead len(p) - NATH
         
         update_intersection = dict()
         for docID in intersection_docs:
@@ -254,7 +255,7 @@ def get_intersection(search_postings_dict: dict, total_n) -> dict:
     return intersection_docs
    
 def rank_frequencies(intersection_docs: dict): # imp tf-idf here?
-    result = sorted(intersection_docs.items(), key=lambda x: -x[1])
+    result = sorted(intersection_docs.items(), key=lambda x: -x[1]) # this turns into a tuple?
 
     to_show = 5 if len(result) >= 5 else len(result)
     return result[:to_show]
@@ -264,8 +265,10 @@ def get_URLs_from_doc(top5docs: dict) -> dict:
     with open("doc_id_to_url.json", "r", encoding="utf-8") as file:
         idIndex = json.load(file)
     
-    for doc, score in enumerate(top5docs):
-        asURL[int(idIndex[str(doc)])] = score # .json's always store keys as strings
+    #print(len(idIndex))
+    
+    for doc, score in (top5docs): # TOOK OUT ENUMERATE -NATH
+        asURL[(idIndex[str(doc)])] = score # .json's always store keys as strings, TOOK OUT int()
 
     return asURL
 
@@ -276,7 +279,7 @@ def print_URLs_and_scores(url_dict: dict) -> None:
 
     n = 1
     print(f"Top {len(url_dict)} Results:")
-    for url, score in enumerate(url_dict):
+    for url, score in url_dict.items(): # TOOK OUT enumerate - NATH
         print(f"{n}. {url}  |||  Relevance Score: {score}")
         n += 1
 
@@ -291,12 +294,15 @@ def query(total_n_docs: int) -> None:
         return
     
     query_as_tokens = process_query_to_token(user_query)
-    full_search = search(query_as_tokens, total_n_docs)
-    if full_search:
-        boolean_search = get_intersection(full_search, total_n_docs)
-        top5_docID = rank_frequencies(boolean_search)
-    top5_URL = get_URLs_from_doc(top5_docID)
-    print_URLs_and_scores(top5_URL)
+    full_search = search(query_as_tokens)
+    #if full_search: #COMMENTED OUT - NATH
+    boolean_search = get_intersection(full_search, total_n_docs)
+    top5_docID = rank_frequencies(boolean_search)
+    
+    print(top5_docID)
+    
+    top5_URL = get_URLs_from_doc(top5_docID) 
+    print_URLs_and_scores(top5_URL) 
     query(total_n_docs)
     
 
@@ -304,14 +310,14 @@ def main():
     if len(sys.argv) == 2:
         filePath = sys.argv[1]
         clear_previous_index()
-        try:
-            corpus = []
-            get_corpus(filePath, corpus)
-            #print(len(corpus))
-            total_n_docs = build_index(corpus) # also get docID associated URLs (loaded in json)
-            query(total_n_docs)
-        except:
-            print("Unable to open path or path is invalid. Please restart the program to try again.") # CHANGE LATER
+        # try:
+        corpus = []
+        get_corpus(filePath, corpus)
+        #print(len(corpus))
+        total_n_docs = build_index(corpus) # also get docID associated URLs (loaded in json)
+        query(total_n_docs)
+        # except:
+        #     print("Unable to open path or path is invalid. Please restart the program to try again.") # CHANGE LATER
         
         
     else:
