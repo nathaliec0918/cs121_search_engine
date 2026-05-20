@@ -284,6 +284,19 @@ def print_URLs_and_scores(url_dict: dict) -> None:
     print()
     return
 
+def query(total_n_docs: int) -> None:  
+    user_query = input("Please enter your query (type '-QUIT-' to quit): ")
+    if user_query == "-QUIT-":
+        return
+    
+    query_as_tokens = process_query_to_token(user_query)
+    full_search = search(query_as_tokens, total_n_docs)
+    if full_search:
+        boolean_search = get_intersection(full_search, total_n_docs)
+        top5_docID = rank_frequencies(boolean_search)
+    top5_URL = get_URLs_from_doc(top5_docID)
+    print_URLs_and_scores(top5_URL)
+    query(total_n_docs)
     
 
 def main():
@@ -294,20 +307,12 @@ def main():
             corpus = []
             get_corpus(filePath, corpus)
             #print(len(corpus))
+            total_n_docs = build_index(corpus) # also get docID associated URLs (loaded in json)
+            query(total_n_docs)
         except:
             print("Unable to open path or path is invalid. Please restart the program to try again.") # CHANGE LATER
-        total_n_docs = build_index(corpus) # also get docID associated URLs (loaded in json)
-        user_query = ""
-        while user_query != "-QUIT-":
-            user_query = input("Please enter your query (type '-QUIT-' to quit): ")
-            query_as_tokens = process_query_to_token(user_query)
-            full_search = search(query_as_tokens, total_n_docs)
-            if full_search:
-                boolean_search = get_intersection(full_search, total_n_docs)
-                top5_docID = rank_frequencies(boolean_search)
-            top5_URL = get_URLs_from_doc(top5_docID)
-            print(top5_URL)
-            # print(top5_URL)
+        
+        
     else:
         print("Please restart the program and specify one file path") 
 
