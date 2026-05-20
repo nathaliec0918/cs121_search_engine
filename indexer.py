@@ -229,6 +229,8 @@ def search(query: str):
             if docID in current:
                 update_intersection[docID] = current[docID] + intersection_p_lists[docID]
         intersection_p_lists = update_intersection
+    
+    return intersection_p_lists
 
 
 def main():
