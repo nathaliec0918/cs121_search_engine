@@ -277,7 +277,8 @@ def print_URLs_and_scores(url_dict: dict) -> None:
     n = 1
     print(f"Top {len(url_dict)} Results:")
     for url, score in enumerate(url_dict):
-        print(f"{url}  |||  Relevance Score: {score}")
+        print(f"{n}. {url}  |||  Relevance Score: {score}")
+        n += 1
 
     if len(url_dict) < 5:
         print(f"Only found {len(url_dict)} results.")
