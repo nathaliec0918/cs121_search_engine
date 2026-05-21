@@ -32,7 +32,8 @@ def get_existing_pi_dir() -> tuple:
             path = os.path.join(existing_pi_dir, test_file)
             with open(path, "r", encoding="utf-8") as f:
                 partial = json.load(f)
-            first_post = list(partial.values()[0][0]) #first [0] gets the first posting list, sec [0] gets first {docid, freq} in that list
+            first_post = list(partial.values())[0][0] #first [0] gets the first posting list, sec [0] gets first {docid, freq} in that list
+            
             assert first_post.keys() == ["docid", "freq"] #update if new posting structure
             len_corpus = int(input("Please enter how many documents are in the corpus.").strip())
             
