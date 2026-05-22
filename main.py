@@ -50,7 +50,7 @@ def get_existing_pi_dir() -> tuple:
             print("Invalid length of corpus.")
             get_existing_pi_dir()
 
-    return existing_pi_dir
+    return "", 0 # need 2 arguments - NATH
 
 
 def create_new_index() -> int:
