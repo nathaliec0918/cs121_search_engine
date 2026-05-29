@@ -81,7 +81,8 @@ def build_index(frontier: list) -> int:
 
 
 def write_new_report(num_docs_seen = None, potential_new_tokens = None, index_size = None):
-    with open("a3_1_report.json", "r", encoding="utf-8") as file:
+    with open("a3_1_report.json", "a+", encoding="utf-8") as file:
+        file.seek(0)
         try:
             report = json.load(file)
         except json.decoder.JSONDecodeError:

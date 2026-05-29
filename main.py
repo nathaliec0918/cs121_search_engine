@@ -40,7 +40,7 @@ def get_existing_pi_dir() -> tuple:
                 partial = json.load(f)
             first_post = list(partial.values())[0][0] #first [0] gets the first posting list, sec [0] gets first {docid, freq} in that list
             
-            assert set(first_post.keys()) == {"doc_ID", "freq"}
+            assert set(first_post.keys()) == {"doc_ID", "freq", "imp_freq"}
 
             len_corpus = int(input("Please enter how many documents are in the corpus.").strip())
             
@@ -68,25 +68,22 @@ def create_new_index() -> int:
 
 
 def main():
-    index_exists = input("Welcome. Do you already have your Index Built? (Please enter 'Y' or 'N')\n(type '-QUIT-' to quit)")
-    if index_exists == "-QUIT-":
-        return
-    index_exists = index_exists.strip().lower()
-    if index_exists == "y":
-        existing_pir_dir, total_n_docs = get_existing_pi_dir()
-        if not existing_pir_dir:
+    while True:
+        index_exists = input("Welcome. Do you already have your Index Built? (Please enter 'Y' or 'N')\n(type '-QUIT-' to quit)")
+        if index_exists == "-QUIT-":
             return
-        merge_partials(existing_pir_dir)
-        search.query(total_n_docs)
-        
-    elif index_exists == 'n':
-        total_n_docs = create_new_index()
-        merge_partials(PARTIAL_DIR)
-        search.query(total_n_docs)
-        
-    
-    else:
-        main()
+        index_exists = index_exists.strip().lower()
+        if index_exists == "y":
+            existing_pir_dir, total_n_docs = get_existing_pi_dir()
+            if not existing_pir_dir:
+                return
+            merge_partials(existing_pir_dir)
+            search.query(total_n_docs)
+            
+        elif index_exists == 'n':
+            total_n_docs = create_new_index()
+            merge_partials(PARTIAL_DIR)
+            search.query(total_n_docs)
 
 if __name__ == "__main__":
     main()
