@@ -31,10 +31,10 @@ Report structure (json) {
 
 
 class Posting:
-    def __init__(self, docID, frequencies, fields = None, positions = None):
+    def __init__(self, docID, frequencies, fields = 0, positions = None):
         self.docID = docID
         self.frequencies = frequencies
-        #self.fields = fields for future assignments
+        self.fields = fields
         #self.positions = positions
 
 # partial index flow 
@@ -54,12 +54,12 @@ def build_index(frontier: list) -> int:
                 docID += 1
                 
                 unique_stemmed_tokens = set()
-                unique_stemmed_tokens, frequencies, url = parse_to_token(document) #stemmed_tokens is already duplicate removed
+                unique_stemmed_tokens, frequencies, important_frequencies, url = parse_to_token(document) #stemmed_tokens is already duplicate removed
                 docIDIndex[docID] = url
                 for t in unique_stemmed_tokens:
                     if t not in index:
                         index[t] = []
-                    index[t].append(Posting(docID, frequencies[t]))
+                    index[t].append(Posting(docID, frequencies[t], important_frequencies.get(t, 0)))
 
             else:
                 continue
@@ -121,7 +121,7 @@ def sort_and_write_to_disk(index: dict, name: int):
     for token in index:
         posting_list = []
         for p in index[token]:
-            posting_list.append({"doc_ID": p.docID, "freq": p.frequencies})
+            posting_list.append({"doc_ID": p.docID, "freq": p.frequencies, "imp_freq": p.fields})
         postings_as_dict[token] = posting_list
 
     with open(path, "w", encoding="utf-8") as f:
@@ -144,6 +144,19 @@ def parse_to_token(file: json) -> list[str]:
         for tag in soup(["script", "style", "noscript"]):
             tag.decompose()
 
+        # extract important text separately before all text
+        important_text = " ".join(
+            tag.get_text() for tag in soup.find_all(["title", "h1", "h2", "h3", "b", "strong"])
+        )
+        important_tokens = re.findall(r"[a-zA-Z0-9]+", important_text.lower())
+        important_stemmed = [STEMMER.stem(token) for token in important_tokens]
+        important_frequencies = dict()
+        for word in important_stemmed:
+            if word in important_frequencies:
+                important_frequencies[word] += 1
+            else:
+                important_frequencies[word] = 1
+
         text_content = soup.get_text(separator=" ")
         tokens = re.findall(r"[a-zA-Z0-9]+", text_content.lower())
 
@@ -161,11 +174,11 @@ def parse_to_token(file: json) -> list[str]:
 
         doc_url = document["url"]
 
-        return set(stemmed), word_frequencies, doc_url
+        return set(stemmed), word_frequencies, important_frequencies, doc_url
     
         
     except (json.JSONDecodeError, OSError):
-        return set(), {}, ""
+        return set(), {}, {}, ""
 
 
 def get_corpus(top, corpus: list):

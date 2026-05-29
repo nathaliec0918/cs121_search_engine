@@ -35,7 +35,7 @@ def search(query_tokens: set) -> dict:
     return token_postings_dict
     
 
-def calc_tfidf(tf: int, df: int, n: int) -> float:
+def calc_tfidf(tf: int, df: int, n: int, imp_freq: int = 0) -> float:
      # code:
     # total_docs = len(idIndex)
     # idf = {}
@@ -46,8 +46,9 @@ def calc_tfidf(tf: int, df: int, n: int) -> float:
     # store freq * idf[token] ...
     weighed_tf = 1 + log(tf, 10)
     weighed_idf = log((n/df), 10)
+    boost = 1 + log(1 + imp_freq, 10)
 
-    return weighed_tf * weighed_idf
+    return weighed_tf * weighed_idf * boost
 
 def get_intersection(search_postings_dict: dict, total_n) -> dict:
     if not search_postings_dict:
@@ -57,14 +58,16 @@ def get_intersection(search_postings_dict: dict, total_n) -> dict:
     first_token = next(iter(sorted_search_postings_dict))
     intersection_docs = {} # INITIALIZED - NATH
     for p in sorted_search_postings_dict[first_token]:
-        intersection_docs[p["doc_ID"]] = calc_tfidf(p["freq"], len(sorted_search_postings_dict[first_token]), total_n) # len(sorted_search_postings_dict[first_token]) instead of len(p) - NATH
+        intersection_docs[p["doc_ID"]] = calc_tfidf(
+            p["freq"], len(sorted_search_postings_dict[first_token]), total_n, p["imp_freq"]
+        ) # len(sorted_search_postings_dict[first_token]) instead of len(p) - NATH
     
     # boolean and
     for token, p_list in list(sorted_search_postings_dict.items())[1:]:
         
         current = dict()
         for p in p_list:
-            current[p["doc_ID"]] = calc_tfidf(p["freq"], len(p_list), total_n) # len(p_list) instead len(p) - NATH
+            current[p["doc_ID"]] = calc_tfidf(p["freq"], len(p_list), total_n, p["imp_freq"]) # len(p_list) instead len(p) - NATH
         
         update_intersection = dict()
         for docID in intersection_docs:
