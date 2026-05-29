@@ -112,20 +112,20 @@ def print_URLs_and_scores(url_dict: dict) -> None:
     return
 
 def query(total_n_docs: int) -> None:  
-    user_query = input("Please enter your query (type '-QUIT-' to quit): ")
-    if user_query == "-QUIT-":
-        return
-    
-    query_as_tokens = process_query_to_token(user_query)
-    if query_as_tokens:
-        full_search = search(query_as_tokens)
-        #if full_search: #COMMENTED OUT - NATH
-        boolean_search = get_intersection(full_search, total_n_docs)
-        top5_docID = rank_frequencies(boolean_search)
-        # print(top5_docID) # REMOVE LATER
+    while True:
+        user_query = input("Please enter your query (type '-QUIT-' to quit): ")
+        if user_query == "-QUIT-":
+            return
         
-        top5_URL = get_URLs_from_doc(top5_docID) 
-        print_URLs_and_scores(top5_URL) 
-    else:
-        print("Empty query. No results.\n")
-    query(total_n_docs)
+        query_as_tokens = process_query_to_token(user_query)
+        if query_as_tokens:
+            full_search = search(query_as_tokens)
+            #if full_search: #COMMENTED OUT - NATH
+            boolean_search = get_intersection(full_search, total_n_docs)
+            top5_docID = rank_frequencies(boolean_search)
+            # print(top5_docID) # REMOVE LATER
+            
+            top5_URL = get_URLs_from_doc(top5_docID) 
+            print_URLs_and_scores(top5_URL) 
+        else:
+            print("Empty query. No results.\n")
