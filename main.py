@@ -15,9 +15,15 @@ def merge_partials(partial_dir: str):
                 merged[token] = []
             merged[token].extend(postings)
 
+    seek_table = {}
     with open("final_index.json", "w", encoding="utf-8") as f:
-        json.dump(merged, f)
+        for token, postings in merged.items():
+            offset = f.tell() # byte position before writing this line
+            seek_table[token] = offset
+            f.write(json.dumps({token: postings}) + "\n")
 
+    with open("seek_table.json", "w", encoding="utf-8") as f:
+        json.dump(seek_table, f)
 
 def get_existing_pi_dir() -> tuple:
     existing_pi_dir = input("Please enter the root path of your partial indexes.\n(type '-QUIT-' to quit)").strip()
