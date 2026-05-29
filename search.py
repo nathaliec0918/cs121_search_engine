@@ -12,15 +12,25 @@ def process_query_to_token(query: str):
     return set(stemmed)
 
 def search(query_tokens: set) -> dict:
-    with open("final_index.json", "r", encoding="utf-8") as f:
-        index = json.load(f)
+    with open("seek_table.json", "r", encoding="utf-8") as f:
+        seek_table = json.load(f)
 
     token_postings_dict = {}
-    for token in query_tokens:
-        posting_list = index.get(token)
-        if posting_list == None:
-            continue
-        token_postings_dict[token] = posting_list
+    with open("final_index.json", "r", encoding="utf-8") as f:
+        for token in query_tokens:
+            offset = seek_table.get(token)
+            if offset is None:
+                continue
+            f.seek(offset)
+            line = f.readline()
+            token_postings_dict[token] = json.loads(line)[token]
+
+    # M2 implementation for loading entire index into memory            
+    # for token in query_tokens:
+    #     posting_list = index.get(token)
+    #     if posting_list == None:
+    #         continue
+    #     token_postings_dict[token] = posting_list
 
     return token_postings_dict
     

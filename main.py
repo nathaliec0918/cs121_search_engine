@@ -17,7 +17,7 @@ def merge_partials(partial_dir: str):
 
     seek_table = {}
     with open("final_index.json", "w", encoding="utf-8") as f:
-        for token, postings in merged.items():
+        for token, postings in sorted(merged.items()):
             offset = f.tell() # byte position before writing this line
             seek_table[token] = offset
             f.write(json.dumps({token: postings}) + "\n")
