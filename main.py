@@ -31,7 +31,7 @@ def get_existing_pi_dir() -> tuple:
         return "", 0
     if not os.path.isdir(existing_pi_dir):
         print("Path given is not a valid directory")
-        get_existing_pi_dir()
+        return get_existing_pi_dir()
     else:
         try:
             test_file = os.listdir(existing_pi_dir)[0]
@@ -48,15 +48,13 @@ def get_existing_pi_dir() -> tuple:
 
         except json.JSONDecodeError as je:
             print("Directory does not contain json files. Please use the indexer.")
-            get_existing_pi_dir()
+            return get_existing_pi_dir()
         except AssertionError as ae:
             print("Partial Index postings do not match expected structure: docid, freq")
-            get_existing_pi_dir()
+            return get_existing_pi_dir()
         except ValueError:
             print("Invalid length of corpus.")
-            get_existing_pi_dir()
-
-    return "", 0 # need 2 arguments - NATH
+            return get_existing_pi_dir()
 
 
 def create_new_index() -> int:
