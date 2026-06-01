@@ -50,7 +50,7 @@ def get_existing_pi_dir() -> tuple:
             print("Directory does not contain json files. Please use the indexer.")
             return get_existing_pi_dir()
         except AssertionError as ae:
-            print("Partial Index postings do not match expected structure: docid, freq")
+            print("Partial Index postings do not match expected structure: docid, freq, imp_freq")
             return get_existing_pi_dir()
         except ValueError:
             print("Invalid length of corpus.")
