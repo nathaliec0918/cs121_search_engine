@@ -2,6 +2,7 @@ import json
 from math import log
 from nltk.stem import PorterStemmer
 import regex as re
+from time import perf_counter
 
 STEMMER = PorterStemmer()
     
@@ -117,6 +118,11 @@ def print_URLs_and_scores(url_dict: dict) -> None:
 def query(total_n_docs: int) -> None:  
     while True:
         user_query = input("Please enter your query (type '-QUIT-' to quit): ")
+
+        #method of timing found from: https://www.programiz.com/python-programming/examples/elapsed-time
+
+        start = perf_counter()
+
         if user_query == "-QUIT-":
             return
         
@@ -132,3 +138,10 @@ def query(total_n_docs: int) -> None:
             print_URLs_and_scores(top5_URL) 
         else:
             print("Empty query. No results.\n")
+
+        end = perf_counter()
+
+        print(f"Time elapsed: {(end - start) * 1000} ms")
+
+
+
