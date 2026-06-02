@@ -117,6 +117,7 @@ def print_URLs_and_scores(url_dict: dict) -> None:
 
 def query(total_n_docs: int) -> None:  
     while True:
+        print("\n-------------------------------------------------------------------------------------------------------")
         user_query = input("Please enter your query (type '-QUIT-' to quit): ")
 
         #method of timing found from: https://www.programiz.com/python-programming/examples/elapsed-time

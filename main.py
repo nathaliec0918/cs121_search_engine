@@ -26,7 +26,7 @@ def merge_partials(partial_dir: str):
         json.dump(seek_table, f)
 
 def get_existing_pi_dir() -> tuple:
-    existing_pi_dir = input("Please enter the root path of your partial indexes.\n(type '-QUIT-' to quit)").strip()
+    existing_pi_dir = input("\nPlease enter the root path of your partial indexes.\n(type '-QUIT-' to quit): ").strip()
     if existing_pi_dir == "-QUIT-":
         return "", 0
     if not os.path.isdir(existing_pi_dir):
@@ -42,7 +42,7 @@ def get_existing_pi_dir() -> tuple:
             
             assert set(first_post.keys()) == {"doc_ID", "freq", "imp_freq"}
 
-            len_corpus = int(input("Please enter how many documents are in the corpus: ").strip())
+            len_corpus = int(input("\nPlease enter how many documents are in the corpus: ").strip())
             
             return existing_pi_dir, len_corpus
 
@@ -50,7 +50,7 @@ def get_existing_pi_dir() -> tuple:
             print("Directory does not contain json files. Please use the indexer.")
             return get_existing_pi_dir()
         except AssertionError as ae:
-            print("Partial Index postings do not match expected structure: docid, freq, imp_freq")
+            print("Partial Index postings do not match expected structure: docid, freq, imp_freq.")
             return get_existing_pi_dir()
         except ValueError:
             print("Invalid length of corpus.")
@@ -58,7 +58,7 @@ def get_existing_pi_dir() -> tuple:
 
 
 def create_new_index() -> int:
-    filePath = input("Please give root of the directory to index: ")
+    filePath = input("\nPlease give root of the directory to index: ")
     indexer.clear_previous_index()
     corpus = []
     indexer.get_corpus(filePath, corpus)
@@ -69,7 +69,8 @@ def create_new_index() -> int:
 
 def main():
     while True:
-        index_exists = input("Welcome. Do you already have your Index Built? (Please enter 'Y' or 'N')\n(type '-QUIT-' to quit)")
+        print("\n=======================================================================================================")
+        index_exists = input("Welcome. Do you already have your Index Built? (Please enter 'Y' or 'N')\n(type '-QUIT-' to quit): ")
         if index_exists == "-QUIT-":
             return
         index_exists = index_exists.strip().lower()
