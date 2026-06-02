@@ -65,17 +65,15 @@ def build_index(frontier: list) -> int:
                 continue
                 #print(document) #REMOVE LATER
         
-        # update on batch level
-        with open("doc_id_to_url.json", "w", encoding="utf-8") as file:
-            json.dump(docIDIndex, file)
-
-        write_new_report(num_docs_seen = docID, potential_new_tokens = index.keys())
-        
         # store then reset batch
         sort_and_write_to_disk(index, batch_name) # uploading too Disk, reset RAM
         index = dict()
 
-        #return docID  #SHOULD MOVED OUTSIDE LOOP - NATH
+    # update on batch level
+    with open("doc_id_to_url.json", "w", encoding="utf-8") as file:
+        json.dump(docIDIndex, file)
+
+    write_new_report(num_docs_seen = docID, potential_new_tokens = index.keys())
         
     return docID
 
