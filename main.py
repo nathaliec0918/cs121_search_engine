@@ -42,7 +42,7 @@ def get_existing_pi_dir() -> tuple:
             
             assert set(first_post.keys()) == {"doc_ID", "freq", "imp_freq"}
 
-            len_corpus = int(input("Please enter how many documents are in the corpus.").strip())
+            len_corpus = int(input("Please enter how many documents are in the corpus: ").strip())
             
             return existing_pi_dir, len_corpus
 
@@ -58,7 +58,7 @@ def get_existing_pi_dir() -> tuple:
 
 
 def create_new_index() -> int:
-    filePath = input("Please give root of the directory to index")
+    filePath = input("Please give root of the directory to index: ")
     indexer.clear_previous_index()
     corpus = []
     indexer.get_corpus(filePath, corpus)

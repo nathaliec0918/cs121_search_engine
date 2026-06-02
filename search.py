@@ -142,6 +142,7 @@ def query(total_n_docs: int) -> None:
         end = perf_counter()
 
         print(f"Time elapsed: {(end - start) * 1000} ms")
+        print()
 
 
 
