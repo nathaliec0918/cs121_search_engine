@@ -25,36 +25,33 @@ def merge_partials(partial_dir: str):
     with open("seek_table.json", "w", encoding="utf-8") as f:
         json.dump(seek_table, f)
 
-def get_existing_pi_dir() -> tuple:
-    existing_pi_dir = input("\nPlease enter the root path of your partial indexes.\n(type '-QUIT-' to quit): ").strip()
-    if existing_pi_dir == "-QUIT-":
+def confirm_existing_index() -> tuple:
+    if not os.path.isfile("final_index.json"):
+        print("Index does not exist. Please build one.")
         return "", 0
-    if not os.path.isdir(existing_pi_dir):
-        print("Path given is not a valid directory")
-        return get_existing_pi_dir()
     else:
         try:
-            test_file = os.listdir(existing_pi_dir)[0]
-            path = os.path.join(existing_pi_dir, test_file)
-            with open(path, "r", encoding="utf-8") as f:
-                partial = json.load(f)
-            first_post = list(partial.values())[0][0] #first [0] gets the first posting list, sec [0] gets first {docid, freq} in that list
+            with open("final_index.json", "r", encoding="utf-8") as f:
+                index = json.load(f)
+            first_post = list(index.values())[0][0] #first [0] gets the first posting list, sec [0] gets first {docid, freq} in that list
             
             assert set(first_post.keys()) == {"doc_ID", "freq", "imp_freq"}
 
             len_corpus = int(input("\nPlease enter how many documents are in the corpus: ").strip())
+            if len_corpus < 0:
+                raise ValueError
             
-            return existing_pi_dir, len_corpus
+            return "final_index.json", len_corpus
 
         except json.JSONDecodeError as je:
-            print("Directory does not contain json files. Please use the indexer.")
-            return get_existing_pi_dir()
+            print("File is not a json. Please use the indexer.")
+            return confirm_existing_index()
         except AssertionError as ae:
-            print("Partial Index postings do not match expected structure: docid, freq, imp_freq.")
-            return get_existing_pi_dir()
+            print("Index postings do not match expected structure: docid, freq, imp_freq.")
+            return confirm_existing_index()
         except ValueError:
             print("Invalid length of corpus.")
-            return get_existing_pi_dir()
+            return confirm_existing_index()
 
 
 def create_new_index() -> int:
@@ -75,10 +72,9 @@ def main():
             return
         index_exists = index_exists.strip().lower()
         if index_exists == "y":
-            existing_pir_dir, total_n_docs = get_existing_pi_dir()
-            if not existing_pir_dir:
+            index_path, total_n_docs = confirm_existing_index()
+            if not index_path:
                 return
-            merge_partials(existing_pir_dir)
             search.query(total_n_docs)
             
         elif index_exists == 'n':
