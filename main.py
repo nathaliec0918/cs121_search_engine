@@ -32,15 +32,17 @@ def confirm_existing_index() -> tuple:
     else:
         try:
             with open("final_index.json", "r", encoding="utf-8") as f:
-                index = json.load(f)
-            first_post = list(index.values())[0][0] #first [0] gets the first posting list, sec [0] gets first {docid, freq} in that list
+                #index = json.load(f)
+                first_line = f.readline()
+                first_post = list(json.loads(first_line).values())[0][0]
+                
+            #first_post = list(index.values())[0][0] #first [0] gets the first posting list, sec [0] gets first {docid, freq} in that list
             
             assert set(first_post.keys()) == {"doc_ID", "freq", "imp_freq"}
 
             len_corpus = int(input("\nPlease enter how many documents are in the corpus: ").strip())
             if len_corpus < 0:
                 raise ValueError
-            
             return "final_index.json", len_corpus
 
         except json.JSONDecodeError as je:
