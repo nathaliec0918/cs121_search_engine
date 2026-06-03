@@ -45,13 +45,13 @@ def confirm_existing_index() -> tuple:
 
         except json.JSONDecodeError as je:
             print("File is not a json. Please use the indexer.")
-            return confirm_existing_index()
+            return "", 0
         except AssertionError as ae:
             print("Index postings do not match expected structure: docid, freq, imp_freq.")
-            return confirm_existing_index()
+            return "", 0
         except ValueError:
             print("Invalid length of corpus.")
-            return confirm_existing_index()
+            return "", 0
 
 
 def create_new_index() -> int:
