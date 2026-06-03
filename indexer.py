@@ -35,7 +35,7 @@ class Posting:
         self.docID = docID
         self.frequencies = frequencies
         self.fields = fields
-        #self.positions = positions
+        self.positions = positions
 
 # partial index flow 
 def build_index(frontier: list) -> int:
@@ -54,12 +54,17 @@ def build_index(frontier: list) -> int:
                 docID += 1
                 
                 unique_stemmed_tokens = set()
-                unique_stemmed_tokens, frequencies, important_frequencies, url = parse_to_token(document) #stemmed_tokens is already duplicate removed
+                # ADDED word_positions
+                unique_stemmed_tokens, frequencies, important_frequencies, url, word_positions = parse_to_token(document) #stemmed_tokens is already duplicate removed
                 docIDIndex[docID] = url
                 for t in unique_stemmed_tokens:
                     if t not in index:
                         index[t] = []
-                    index[t].append(Posting(docID, frequencies[t], important_frequencies.get(t, 0)))
+                    index[t].append(Posting(docID, 
+                                            frequencies[t], 
+                                            important_frequencies.get(t, 0),
+                                            word_positions.get(t, []) # word pos
+                                            ))
 
             else:
                 continue
@@ -120,7 +125,10 @@ def sort_and_write_to_disk(index: dict, name: int):
     for token in index:
         posting_list = []
         for p in index[token]:
-            posting_list.append({"doc_ID": p.docID, "freq": p.frequencies, "imp_freq": p.fields})
+            posting_list.append({"doc_ID": p.docID, 
+                                 "freq": p.frequencies, 
+                                 "imp_freq": p.fields,
+                                 "positions": p.positions})
         postings_as_dict[token] = posting_list
 
     with open(path, "w", encoding="utf-8") as f:
@@ -170,14 +178,22 @@ def parse_to_token(file: json) -> list[str]:
                 word_frequencies[word] += 1
             else: 
                 word_frequencies[word] = 1
+                
+        # positions
+        word_positions = dict()
+        for pos, word in enumerate(stemmed):
+            if word not in word_positions:
+                word_positions[word] = []
+            word_positions[word].append(pos)
+            
 
         doc_url = document["url"]
 
-        return set(stemmed), word_frequencies, important_frequencies, doc_url
+        return set(stemmed), word_frequencies, important_frequencies, doc_url, word_positions
     
         
     except (json.JSONDecodeError, OSError):
-        return set(), {}, {}, ""
+        return set(), {}, {}, "", {}
 
 
 def get_corpus(top, corpus: list):

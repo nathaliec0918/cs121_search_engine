@@ -37,8 +37,7 @@ def confirm_existing_index() -> tuple:
                 first_post = list(json.loads(first_line).values())[0][0]
                 
             #first_post = list(index.values())[0][0] #first [0] gets the first posting list, sec [0] gets first {docid, freq} in that list
-            
-            assert set(first_post.keys()) == {"doc_ID", "freq", "imp_freq"}
+            assert set(first_post.keys()) == {"doc_ID", "freq", "imp_freq","positions"}
 
             len_corpus = int(input("\nPlease enter how many documents are in the corpus: ").strip())
             if len_corpus < 0:
@@ -49,7 +48,7 @@ def confirm_existing_index() -> tuple:
             print("File is not a json. Please use the indexer.")
             return "", 0
         except AssertionError as ae:
-            print("Index postings do not match expected structure: docid, freq, imp_freq.")
+            print("Index postings do not match expected structure: docid, freq, imp_freq, positions.")
             return "", 0
         except ValueError:
             print("Invalid length of corpus.")
